@@ -1,10 +1,14 @@
-
 import unicodedata
 import re
 import io
 import pickle
 import logging
 import os
+
+import tensorflow as tf
+
+K = tf.keras
+KP = tf.keras.preprocessing
 
 
 class Constants:
@@ -65,6 +69,38 @@ def create_dataset(path, num_examples):
     ]
 
     return zip(*word_pairs)
+
+
+def max_length(iterable):
+    """
+    Arguments:
+        iterable {Iteratable} -- An object which can be iterated 
+            using a python for loop
+
+    Returns:
+        [int] -- Max length of all objects length inside the iterable
+    """
+    return max(len(t) for t in iterable)
+
+
+def tokenize(lang):
+    """Creates a Tokenizer for the given list of sentences
+    Tokenizes all the sentences in `lang`
+
+    Arguments:
+        lang {list} -- List of the strings each representing a sentence
+
+    Returns:
+        [list] -- List of sequences of each text string
+        [KP.text.Tokenizer] -- Object of the tokenizer 
+    """
+    lang_tokenizer = KP.text.Tokenizer(filters='')
+    lang_tokenizer.fit_on_texts(lang)
+
+    text_seq = lang_tokenizer.texts_to_sequences(lang)
+    text_seq = KP.sequence.pad_sequences(text_seq, padding='post')
+
+    return text_seq, lang_tokenizer
 
 
 def _cache_data(func, path, *args, **kwargs):
