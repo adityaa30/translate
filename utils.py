@@ -14,15 +14,18 @@ class Constants:
     CACHE_DIR = 'cache'
 
     def __init__(self):
-        self.logger = logging.Logger('Machine-Translation')
+        logging.basicConfig(level=logging.DEBUG)
+
+        # Create directory to save all cache data
+        if not (os.path.exists(self.CACHE_DIR) and os.path.isdir(self.CACHE_DIR)):
+            logging.debug(f'Created directory => {self.CACHE_DIR}')
+            os.mkdir(Constants.CACHE_DIR)
 
 
-constants = Constants()
-logger = constants.logger
+_ = Constants()
+
 
 # Converts the unicode file to ascii
-
-
 def unicode_to_ascii(s):
     return ''.join(c for c in unicodedata.normalize('NFD', s) if unicodedata.category(c) != 'Mn')
 
@@ -65,20 +68,45 @@ def create_dataset(path, num_examples):
 
 
 def _cache_data(func, path, *args, **kwargs):
+    """Called by [load_cached_data] to cache the output of the provide function
+
+    Arguments:
+        func {function} -- Function used to calculate the ouput
+        path {str} -- Path of the cache file
+
+        args, kwargs -- `func` (function) parameters
+    Raises:
+        e: Exception raised either while executing `func` function or while serializing
+            the data 
+    """
     try:
-        pickle.dump(func(*args, **kwargs), path)
-        logger.info(f'Succesfully cached output to {path}')
+        with open(path, 'wb') as f:
+            pickle.dump(func(*args, **kwargs), f)
+            logging.info(f'Succesfully cached output => {path}')
     except Exception as e:
-        logger.error(str(e))
+        logging.error(str(e))
         raise e
 
 
-def load_cached_data(func, *args, **kwargs):
+def load_cached_data(func, cache_data=True, *args, **kwargs):
+    """Loads the ouput from the cached file.
+    If data is not already cached then calls the function `_cache_data`
+    to cache it and returns the output
+
+    Arguments:
+        func {function} -- Function used to calculate the ouput
+        cache_data {boolean} -- Where to recalculate the output and cache it again 
+
+        args, kwargs -- `func` (function) parameters
+    Returns:
+        Ouput obtained after passing the function parameters
+    """
     path = os.path.join(Constants.CACHE_DIR, f'cache_{func.__name__}.pkl')
 
-    if not (os.path.exists(path) and os.path.isfile(path)):
+    if not (os.path.exists(path) and os.path.isfile(path)) or cache_data:
         _cache_data(func, path, *args, **kwargs)
 
-    out = pickle.load(path)
-    logger.info(f'Load cache data from {path}')
+    with open(path, 'rb') as f:
+        out = pickle.load(f)
+    logging.info(f'Load cache data from => {path}')
     return out
