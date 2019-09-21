@@ -18,8 +18,6 @@ AUTOTUNE = tf.data.experimental.AUTOTUNE
 
 
 class Dataset:
-    EMBEDDING_DIM = 256
-    LSTM_UNITS = 1024
 
     def __init__(self, batch_size=64):
         # Download the dataset file
@@ -43,10 +41,11 @@ class Dataset:
         )
 
         # Log the dataset details
-        logging.debug(f'Train input data => {len(self.train_input)}')
-        logging.debug(f'Validation input data => {len(self.val_input)}')
-        logging.debug(f'Train target data => {len(self.train_target)}')
-        logging.debug(f'Validation target data => {len(self.val_target)}')
+        logging.debug(f'Input data (train, val) => '
+                      '({len(self.train_input)}, {len(self.val_input)})')
+
+        logging.debug(f'Target data (train, val) => '
+                      '({len(self.train_target)}, {len(self.val_target)})')
 
         self.buffer_size = len(self.train_input)
         self.batch_size = batch_size
@@ -60,10 +59,6 @@ class Dataset:
             .map(lambda x, y: self.remove_unecessary_zero(x, y), num_parallel_calls=AUTOTUNE) \
             .shuffle(self.buffer_size) \
             .batch(self.batch_size, drop_remainder=True)
-
-        example_input_batch, example_target_batch = next(
-            iter(self.train_dataset))
-        print(example_input_batch.shape, example_target_batch.shape)
 
     @staticmethod
     def remove_unecessary_zero(x, y):

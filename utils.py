@@ -17,6 +17,9 @@ class Constants:
 
     CACHE_DIR = 'cache'
 
+    EMBEDDING_DIM = 256
+    LSTM_UNITS = 1024
+
     def __init__(self):
         logging.basicConfig(level=logging.DEBUG)
 
