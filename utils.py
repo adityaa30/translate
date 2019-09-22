@@ -15,18 +15,56 @@ class Constants:
     TOKEN_START = '<start>'
     TOKEN_END = '<end>'
 
-    CACHE_DIR = 'cache'
-
+    EPOCHS = 15
     EMBEDDING_DIM = 256
     LSTM_UNITS = 1024
+    BATCH_SIZE = 32
+    DATASET_SIZE = 30000  # For taking the complete dataset (= None)
+
+    # Logs each train step with great detail.
+    DEBUG_MODE = True
+
+    DIR_CACHE = os.path.join(os.path.abspath('.'), 'cache')
+    DIR_CHECKPOINTS = os.path.join(os.path.abspath('.'), 'checkpoints')
+    DIR_LOGS = os.path.join(os.path.abspath('.'), 'logs')
+
+    PATH_CACHE_DIR = os.path.join(DIR_CACHE,
+                                  f'cache_{DATASET_SIZE}_{BATCH_SIZE}')
+
+    PATH_LOG_FILE = os.path.join(DIR_LOGS,
+                                 f'app_debug_{DATASET_SIZE}_{BATCH_SIZE}.log')
+
+    PATH_CHECKPOINT_DIR = os.path.join(DIR_CHECKPOINTS,
+                                       f'ckpt_{DATASET_SIZE}_{BATCH_SIZE}')
+
+    PATH_CHECKPOINT = os.path.join(PATH_CHECKPOINT_DIR, 'ckpt')
 
     def __init__(self):
-        logging.basicConfig(level=logging.DEBUG)
+        # Create directory to save all logs data
+        if not (os.path.exists(self.DIR_LOGS) and os.path.isdir(self.DIR_LOGS)):
+            os.mkdir(self.DIR_LOGS)
+
+        # Setup logging config
+        logging.basicConfig(
+            level=logging.DEBUG,
+            filename=self.PATH_LOG_FILE,
+            format='[%(asctime)s -- %(threadName)s] %(levelname)s: %(message)s',
+            datefmt='%d-%b-%y %H:%M:%S'
+        )
+
+        # Create directory to save all checkpoints
+        if not (os.path.exists(self.DIR_CHECKPOINTS) and os.path.isdir(self.DIR_CHECKPOINTS)):
+            os.mkdir(self.DIR_CHECKPOINTS)
 
         # Create directory to save all cache data
-        if not (os.path.exists(self.CACHE_DIR) and os.path.isdir(self.CACHE_DIR)):
-            logging.debug(f'Created directory => {self.CACHE_DIR}')
-            os.mkdir(Constants.CACHE_DIR)
+        if not (os.path.exists(self.DIR_CACHE) and os.path.isdir(self.DIR_CACHE)):
+            os.mkdir(self.DIR_CACHE)
+            logging.info(f'Created directory => {self.DIR_CACHE}')
+
+        # Create directory to save all caches
+        if not (os.path.exists(self.PATH_CACHE_DIR) and os.path.isdir(self.PATH_CACHE_DIR)):
+            os.mkdir(self.PATH_CACHE_DIR)
+            logging.info(f'Created directory => {self.PATH_CACHE_DIR}')
 
 
 _ = Constants()
@@ -140,12 +178,13 @@ def load_cached_data(func, cache_data=True, *args, **kwargs):
     Returns:
         Ouput obtained after passing the function parameters
     """
-    path = os.path.join(Constants.CACHE_DIR, f'cache_{func.__name__}.pkl')
+    path = os.path.join(Constants.DIR_CACHE, f'cache_{func.__name__}.pkl')
 
     if not (os.path.exists(path) and os.path.isfile(path)) or cache_data:
         _cache_data(func, path, *args, **kwargs)
 
     with open(path, 'rb') as f:
         out = pickle.load(f)
-    logging.info(f'Load cache data from => {path}')
+
+    logging.info(f'Loaded cached data from => {path}')
     return out

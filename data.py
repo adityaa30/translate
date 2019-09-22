@@ -19,7 +19,7 @@ AUTOTUNE = tf.data.experimental.AUTOTUNE
 
 class Dataset:
 
-    def __init__(self, batch_size=64):
+    def __init__(self):
         # Download the dataset file
         self.path_to_zip = K.utils.get_file(
             'spa-eng.zip',
@@ -32,7 +32,10 @@ class Dataset:
             'spa-eng',
             'spa.txt'
         )
-        self.input_seq, self.target_seq, self.tokenizer_input, self.tokenizer_target = self.load_dataset()
+        self.input_seq, \
+            self.target_seq, \
+            self.tokenizer_input, \
+            self.tokenizer_target = self.load_dataset(num_examples=Constants.DATASET_SIZE)
 
         # Creating training and validation sets using an 80-20 split
         self.train_input, self.val_input, self.train_target, self.val_target = train_test_split(
@@ -42,23 +45,21 @@ class Dataset:
 
         # Log the dataset details
         logging.debug(f'Input data (train, val) => '
-                      '({len(self.train_input)}, {len(self.val_input)})')
+                      f'({len(self.train_input)}, {len(self.val_input)})')
 
         logging.debug(f'Target data (train, val) => '
-                      '({len(self.train_target)}, {len(self.val_target)})')
+                      f'({len(self.train_target)}, {len(self.val_target)})')
 
         self.buffer_size = len(self.train_input)
-        self.batch_size = batch_size
-        self.steps_per_epoch = len(self.train_input) // self.batch_size
-        self.vocab_size_input = len(self.tokenizer_input.word_index)
-        self.vocab_size_target = len(self.tokenizer_target.word_index)
+        self.steps_per_epoch = len(self.train_input) // Constants.BATCH_SIZE
+        self.vocab_size_input = len(self.tokenizer_input.word_index) + 1
+        self.vocab_size_target = len(self.tokenizer_target.word_index) + 1
 
         # Create [tf.data.Dataset] pipeline considering bucketing of each batch
         self.train_dataset = tf.data.Dataset \
             .from_tensor_slices((self.train_input, self.train_target)) \
-            .map(lambda x, y: self.remove_unecessary_zero(x, y), num_parallel_calls=AUTOTUNE) \
             .shuffle(self.buffer_size) \
-            .batch(self.batch_size, drop_remainder=True)
+            .batch(Constants.BATCH_SIZE, drop_remainder=True)
 
     @staticmethod
     def remove_unecessary_zero(x, y):
