@@ -2,72 +2,16 @@ import unicodedata
 import re
 import io
 import pickle
-import logging
 import os
 
+import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 import tensorflow as tf
+
+import constant
 
 K = tf.keras
 KP = tf.keras.preprocessing
-
-
-class Constants:
-    TOKEN_START = '<start>'
-    TOKEN_END = '<end>'
-
-    EPOCHS = 15
-    EMBEDDING_DIM = 256
-    LSTM_UNITS = 1024
-    BATCH_SIZE = 32
-    DATASET_SIZE = 30000  # For taking the complete dataset (= None)
-
-    # Logs each train step with great detail.
-    DEBUG_MODE = True
-
-    DIR_CACHE = os.path.join(os.path.abspath('.'), 'cache')
-    DIR_CHECKPOINTS = os.path.join(os.path.abspath('.'), 'checkpoints')
-    DIR_LOGS = os.path.join(os.path.abspath('.'), 'logs')
-
-    PATH_CACHE_DIR = os.path.join(DIR_CACHE,
-                                  f'cache_{DATASET_SIZE}_{BATCH_SIZE}')
-
-    PATH_LOG_FILE = os.path.join(DIR_LOGS,
-                                 f'app_debug_{DATASET_SIZE}_{BATCH_SIZE}.log')
-
-    PATH_CHECKPOINT_DIR = os.path.join(DIR_CHECKPOINTS,
-                                       f'ckpt_{DATASET_SIZE}_{BATCH_SIZE}')
-
-    PATH_CHECKPOINT = os.path.join(PATH_CHECKPOINT_DIR, 'ckpt')
-
-    def __init__(self):
-        # Create directory to save all logs data
-        if not (os.path.exists(self.DIR_LOGS) and os.path.isdir(self.DIR_LOGS)):
-            os.mkdir(self.DIR_LOGS)
-
-        # Setup logging config
-        logging.basicConfig(
-            level=logging.DEBUG,
-            filename=self.PATH_LOG_FILE,
-            format='[%(asctime)s -- %(threadName)s] %(levelname)s: %(message)s',
-            datefmt='%d-%b-%y %H:%M:%S'
-        )
-
-        # Create directory to save all checkpoints
-        if not (os.path.exists(self.DIR_CHECKPOINTS) and os.path.isdir(self.DIR_CHECKPOINTS)):
-            os.mkdir(self.DIR_CHECKPOINTS)
-
-        # Create directory to save all cache data
-        if not (os.path.exists(self.DIR_CACHE) and os.path.isdir(self.DIR_CACHE)):
-            os.mkdir(self.DIR_CACHE)
-            logging.info(f'Created directory => {self.DIR_CACHE}')
-
-        # Create directory to save all caches
-        if not (os.path.exists(self.PATH_CACHE_DIR) and os.path.isdir(self.PATH_CACHE_DIR)):
-            os.mkdir(self.PATH_CACHE_DIR)
-            logging.info(f'Created directory => {self.PATH_CACHE_DIR}')
-
-
-_ = Constants()
 
 
 # Converts the unicode file to ascii
@@ -91,7 +35,7 @@ def preprocess_sentence(w):
 
     # adding a start and an end token to the sentence
     # so that the model know when to start and stop predicting.
-    w = f'{Constants.TOKEN_START} {w} {Constants.TOKEN_END}'
+    w = f'{constant.TOKEN_START} {w} {constant.TOKEN_END}'
     return w
 
 
@@ -110,18 +54,6 @@ def create_dataset(path, num_examples):
     ]
 
     return zip(*word_pairs)
-
-
-def max_length(iterable):
-    """
-    Arguments:
-        iterable {Iteratable} -- An object which can be iterated 
-            using a python for loop
-
-    Returns:
-        [int] -- Max length of all objects length inside the iterable
-    """
-    return max(len(t) for t in iterable)
 
 
 def tokenize(lang):
@@ -159,9 +91,9 @@ def _cache_data(func, path, *args, **kwargs):
     try:
         with open(path, 'wb') as f:
             pickle.dump(func(*args, **kwargs), f)
-            logging.info(f'Succesfully cached output => {path}')
+            constant.LOGGER.info(f'Succesfully cached output => {path}')
     except Exception as e:
-        logging.error(str(e))
+        constant.LOGGER.error(str(e))
         raise e
 
 
@@ -178,7 +110,7 @@ def load_cached_data(func, cache_data=True, *args, **kwargs):
     Returns:
         Ouput obtained after passing the function parameters
     """
-    path = os.path.join(Constants.DIR_CACHE, f'cache_{func.__name__}.pkl')
+    path = os.path.join(constant.DIR_CACHE, f'cache_{func.__name__}.pkl')
 
     if not (os.path.exists(path) and os.path.isfile(path)) or cache_data:
         _cache_data(func, path, *args, **kwargs)
@@ -186,5 +118,28 @@ def load_cached_data(func, cache_data=True, *args, **kwargs):
     with open(path, 'rb') as f:
         out = pickle.load(f)
 
-    logging.info(f'Loaded cached data from => {path}')
+    constant.LOGGER.info(f'Loaded cached data from => {path}')
     return out
+
+
+def plot_attention(attention, sentence, predicted_sentence):
+    """Plots the attention weights
+
+    Arguments:
+        attention {list<ndarray>} -- Attention values for each time t unit
+        sentence {list<str>} -- List of all words in the input sentence 
+        predicted_sentence {list<str>} -- List of all words in the output sentence
+    """
+    fig = plt.figure(figsize=(10, 10))
+    ax = fig.add_subplot(1, 1, 1)
+    ax.matshow(attention, cmap='viridis')
+
+    # fontdict = {'fontsize': 14}
+
+    ax.set_xticklabels([''] + sentence, rotation=90)
+    ax.set_yticklabels([''] + predicted_sentence)
+
+    ax.xaxis.set_major_locator(ticker.MultipleLocator(1))
+    ax.yaxis.set_major_locator(ticker.MultipleLocator(1))
+
+    plt.show()

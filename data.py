@@ -1,13 +1,7 @@
-from utils import (
-    Constants,
-    create_dataset,
-    tokenize,
-    max_length,
-    load_cached_data
-)
+import constant
+from utils import (create_dataset, tokenize, load_cached_data)
 
 import os
-import logging
 
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
@@ -35,7 +29,7 @@ class Dataset:
         self.input_seq, \
             self.target_seq, \
             self.tokenizer_input, \
-            self.tokenizer_target = self.load_dataset(num_examples=Constants.DATASET_SIZE)
+            self.tokenizer_target = self.load_dataset()
 
         # Creating training and validation sets using an 80-20 split
         self.train_input, self.val_input, self.train_target, self.val_target = train_test_split(
@@ -44,29 +38,26 @@ class Dataset:
         )
 
         # Log the dataset details
-        logging.debug(f'Input data (train, val) => '
+        constant.LOGGER.debug(f'Input data (train, val) => '
                       f'({len(self.train_input)}, {len(self.val_input)})')
 
-        logging.debug(f'Target data (train, val) => '
+        constant.LOGGER.debug(f'Target data (train, val) => '
                       f'({len(self.train_target)}, {len(self.val_target)})')
 
         self.buffer_size = len(self.train_input)
-        self.steps_per_epoch = len(self.train_input) // Constants.BATCH_SIZE
+        self.steps_per_epoch = len(self.train_input) // constant.BATCH_SIZE
         self.vocab_size_input = len(self.tokenizer_input.word_index) + 1
         self.vocab_size_target = len(self.tokenizer_target.word_index) + 1
+        self.max_length_target = self.max_length(self.target_seq)
+        self.max_length_input = self.max_length(self.input_seq)
 
         # Create [tf.data.Dataset] pipeline considering bucketing of each batch
         self.train_dataset = tf.data.Dataset \
             .from_tensor_slices((self.train_input, self.train_target)) \
             .shuffle(self.buffer_size) \
-            .batch(Constants.BATCH_SIZE, drop_remainder=True)
+            .batch(constant.BATCH_SIZE, drop_remainder=True)
 
-    @staticmethod
-    def remove_unecessary_zero(x, y):
-        # TODO: Complete the function
-        return x, y
-
-    def load_dataset(self, num_examples=None):
+    def load_dataset(self, num_examples=constant.DATASET_SIZE):
         """Loads the dataset
         Calls [create_dataset] to retrive the processed data
 
@@ -86,5 +77,17 @@ class Dataset:
         input_text_seq, inp_lang_tokenizer = tokenize(inp_lang)
         target_text_seq, targ_lang_tokenizer = tokenize(targ_lang)
 
-        logging.info('Loaded the dataset')
+        constant.LOGGER.info('Loaded the dataset')
         return input_text_seq, target_text_seq, inp_lang_tokenizer, targ_lang_tokenizer
+
+    @staticmethod
+    def max_length(iterable):
+        """
+        Arguments:
+            iterable {Iteratable} -- An object which can be iterated 
+                using a python for loop
+
+        Returns:
+            [int] -- Max length of all objects length inside the iterable
+        """
+        return max(len(t) for t in iterable)
