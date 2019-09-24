@@ -36,10 +36,11 @@ if not (os.path.exists(DIR_LOGS) and os.path.isdir(DIR_LOGS)):
 logging.basicConfig(
     level=logging.DEBUG,
     filename=PATH_LOG_FILE,
-    format='[%(asctime)s] %(levelname)s: %(message)s',
+    format='[%(asctime)s -- %(filename)s] %(levelname)s: %(message)s',
     datefmt='%d-%b-%y %H:%M:%S'
 )
-LOGGER = logging.getLogger('machine-translation')
+
+LOGGER = logging.getLogger(__name__)
 
 # Create directory to save all checkpoints
 if not (os.path.exists(DIR_CHECKPOINTS) and os.path.isdir(DIR_CHECKPOINTS)):

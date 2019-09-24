@@ -3,12 +3,15 @@ import re
 import io
 import pickle
 import os
+import logging
 
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import tensorflow as tf
 
 import constant
+
+LOGGER = logging.getLogger(__name__)
 
 K = tf.keras
 KP = tf.keras.preprocessing
@@ -91,9 +94,9 @@ def _cache_data(func, path, *args, **kwargs):
     try:
         with open(path, 'wb') as f:
             pickle.dump(func(*args, **kwargs), f)
-            constant.LOGGER.info(f'Succesfully cached output => {path}')
+            LOGGER.info(f'Succesfully cached output => {path}')
     except Exception as e:
-        constant.LOGGER.error(str(e))
+        LOGGER.error(str(e))
         raise e
 
 
@@ -118,7 +121,7 @@ def load_cached_data(func, cache_data=True, *args, **kwargs):
     with open(path, 'rb') as f:
         out = pickle.load(f)
 
-    constant.LOGGER.info(f'Loaded cached data from => {path}')
+    LOGGER.info(f'Loaded cached data from => {path}')
     return out
 
 

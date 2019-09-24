@@ -1,4 +1,5 @@
 import time
+import logging
 import numpy as np
 import tensorflow as tf
 
@@ -6,6 +7,8 @@ import constant
 from utils import (preprocess_sentence, plot_attention)
 from data import Dataset
 from models import (Encoder, BahdanauAttention, Decoder)
+
+LOGGER = logging.getLogger(__name__)
 
 K = tf.keras
 KP = tf.keras.preprocessing
@@ -32,9 +35,9 @@ decoder = Decoder(
     constant.LSTM_UNITS,
     constant.BATCH_SIZE
 )
-constant.LOGGER.info(f'Initialized Encoder, Attention Layer & Decoder')
+LOGGER.info(f'Initialized Encoder, Attention Layer & Decoder')
 
-# constant.LOGGER the model details
+# LOGGER the model details
 example_input_batch, example_target_batch = next(iter(data.train_dataset))
 sample_hidden = encoder.initialize_hidden_state()
 sample_output, sample_hidden = encoder(example_input_batch, sample_hidden)
@@ -44,19 +47,19 @@ sample_decoder_output, sample_decoder_state, _ = decoder(tf.random.uniform((cons
                                                          sample_hidden,
                                                          sample_output)
 
-constant.LOGGER.debug(f'Encoder output shape => '
+LOGGER.debug(f'Encoder output shape => '
               f'(batch size, sequence length, units) => {sample_output.shape}')
-constant.LOGGER.debug(f'Encoder Hidden state shape => '
+LOGGER.debug(f'Encoder Hidden state shape => '
               f'(batch size, units) => {sample_hidden.shape}')
 
-constant.LOGGER.debug(f'Attention result shape => '
+LOGGER.debug(f'Attention result shape => '
               f'(batch size, units) => {attention_result.shape}')
-constant.LOGGER.debug(f'Attention weights shape => '
+LOGGER.debug(f'Attention weights shape => '
               f'(batch_size, sequence_length, 1) => {attention_weights.shape}')
 
-constant.LOGGER.debug(f'Decoder output shape => '
+LOGGER.debug(f'Decoder output shape => '
               f'(batch_size, vocab size) => {sample_decoder_output.shape}')
-constant.LOGGER.debug(f'Decoder Hidden state shape => '
+LOGGER.debug(f'Decoder Hidden state shape => '
               f'(batch_size, units) => {sample_decoder_state.shape}')
 
 
@@ -109,7 +112,7 @@ def train_step(inp, target, enc_hidden):
 
 
 def train():
-    constant.LOGGER.info(f'Starting training')
+    LOGGER.info(f'Starting training')
     for epoch in range(constant.EPOCHS):
         start = time.time()
 
@@ -121,18 +124,18 @@ def train():
             total_loss += batch_loss
 
             if batch % 100 == 0:
-                constant.LOGGER.debug(f'Epoch {epoch + 1} '
+                LOGGER.debug(f'Epoch {epoch + 1} '
                               f'Batch {batch} '
                               f'Loss {batch_loss.numpy()}')
 
         # saving (checkpoint) the model every 2 epochs
         if (epoch + 1) % 2 == 0:
             checkpoint.save(file_prefix=constant.PATH_CHECKPOINT)
-            constant.LOGGER.debug(f'Epoch {epoch + 1} Checkpoint saved')
+            LOGGER.debug(f'Epoch {epoch + 1} Checkpoint saved')
 
-        constant.LOGGER.debug(f'Epoch {epoch + 1} '
+        LOGGER.debug(f'Epoch {epoch + 1} '
                       f'Loss {total_loss / data.steps_per_epoch}')
-        constant.LOGGER.debug(f'Time taken for 1 epoch {time.time() - start} sec')
+        LOGGER.debug(f'Time taken for 1 epoch {time.time() - start} sec')
 
 
 def evaluate(sentence):
@@ -186,8 +189,8 @@ def evaluate(sentence):
 def translate(sentence):
     result, sentence, attention_plot = evaluate(sentence)
 
-    constant.LOGGER.debug(f'Input: {sentence}')
-    constant.LOGGER.debug(f'Predicted translation: {result}')
+    LOGGER.debug(f'Input: {sentence}')
+    LOGGER.debug(f'Predicted translation: {result}')
 
     result = result.strip().split(' ')
     sentence = sentence.strip().split(' ')
@@ -200,10 +203,10 @@ def translate(sentence):
 try:
     checkpoint.restore(tf.train.latest_checkpoint(
         constant.PATH_CHECKPOINT_DIR))
-    constant.LOGGER.info(f'Loaded weights from => '
+    LOGGER.info(f'Loaded weights from => '
                  f'{constant.PATH_CHECKPOINT_DIR}')
 except Exception as e:
-    constant.LOGGER.error(f'Error while loading trained weights => {e}')
+    LOGGER.error(f'Error while loading trained weights => {e}')
 
 translate(u'hace mucho frio aqui.')
 

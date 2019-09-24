@@ -1,10 +1,13 @@
+import os
+import logging
+import tensorflow as tf
+from sklearn.model_selection import train_test_split
+
 import constant
 from utils import (create_dataset, tokenize, load_cached_data)
 
-import os
-
-import tensorflow as tf
-from sklearn.model_selection import train_test_split
+logging.getLogger('matplotlib').setLevel(logging.WARNING)
+LOGGER = logging.getLogger(__name__)
 
 K = tf.keras
 KP = tf.keras.preprocessing
@@ -38,11 +41,11 @@ class Dataset:
         )
 
         # Log the dataset details
-        constant.LOGGER.debug(f'Input data (train, val) => '
-                      f'({len(self.train_input)}, {len(self.val_input)})')
+        LOGGER.debug(f'Input data (train, val) => '
+                     f'({len(self.train_input)}, {len(self.val_input)})')
 
-        constant.LOGGER.debug(f'Target data (train, val) => '
-                      f'({len(self.train_target)}, {len(self.val_target)})')
+        LOGGER.debug(f'Target data (train, val) => '
+                     f'({len(self.train_target)}, {len(self.val_target)})')
 
         self.buffer_size = len(self.train_input)
         self.steps_per_epoch = len(self.train_input) // constant.BATCH_SIZE
@@ -77,7 +80,7 @@ class Dataset:
         input_text_seq, inp_lang_tokenizer = tokenize(inp_lang)
         target_text_seq, targ_lang_tokenizer = tokenize(targ_lang)
 
-        constant.LOGGER.info('Loaded the dataset')
+        LOGGER.info('Loaded the dataset')
         return input_text_seq, target_text_seq, inp_lang_tokenizer, targ_lang_tokenizer
 
     @staticmethod
