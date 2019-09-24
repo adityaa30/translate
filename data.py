@@ -16,19 +16,23 @@ AUTOTUNE = tf.data.experimental.AUTOTUNE
 
 class Dataset:
 
-    def __init__(self):
-        # Download the dataset file
-        self.path_to_zip = K.utils.get_file(
-            'spa-eng.zip',
-            origin='http://storage.googleapis.com/download.tensorflow.org/data/spa-eng.zip',
-            extract=True
-        )
+    def __init__(self, data_path=None):
+        if data_path is None:
+            # Download the dataset file
+            path_to_zip = K.utils.get_file(
+                'spa-eng.zip',
+                origin='http://storage.googleapis.com/download.tensorflow.org/data/spa-eng.zip',
+                extract=True
+            )
 
-        self.path_to_file = os.path.join(
-            os.path.dirname(self.path_to_zip),
-            'spa-eng',
-            'spa.txt'
-        )
+            self.path_to_file = os.path.join(
+                os.path.dirname(path_to_zip),
+                'spa-eng',
+                'spa.txt'
+            )
+        else:
+            self.path_to_file = data_path
+
         self.input_seq, \
             self.target_seq, \
             self.tokenizer_input, \
@@ -72,10 +76,13 @@ class Dataset:
             [list] -- List of sequences of input & output dataset
             [KP.text.Tokenizer] -- Object of the tokenizer of input & output dataset
         """
-        targ_lang, inp_lang = load_cached_data(
-            create_dataset, False,
-            self.path_to_file, num_examples
-        )
+        # NOTE: Temporarily disabled caching of the dataset
+        # targ_lang, inp_lang = load_cached_data(
+        #     create_dataset, True,
+        #     self.path_to_file, num_examples
+        # )
+
+        inp_lang, targ_lang = create_dataset(self.path_to_file, num_examples)
 
         input_text_seq, inp_lang_tokenizer = tokenize(inp_lang)
         target_text_seq, targ_lang_tokenizer = tokenize(targ_lang)

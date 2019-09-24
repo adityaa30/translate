@@ -3,6 +3,7 @@ import re
 import io
 import pickle
 import os
+import errno
 import logging
 
 import matplotlib.pyplot as plt
@@ -146,3 +147,51 @@ def plot_attention(attention, sentence, predicted_sentence):
     ax.yaxis.set_major_locator(ticker.MultipleLocator(1))
 
     plt.show()
+
+
+def readable_dir(prospective_dir):
+    """Check is the provided path leads to a directory
+
+    Arguments:
+        prospective_dir {str} -- Directory path 
+
+    Raises:
+        error: FileNotFoundError saying that the director is not valid
+
+    Returns:
+        [type] -- [description]
+    """
+    error = FileNotFoundError(errno.ENOENT,
+                              os.strerror(errno.ENOENT),
+                              f'{prospective_dir} is not a valid dir')
+
+    if not os.path.isdir(prospective_dir):
+        raise error
+    if os.access(prospective_dir, os.R_OK):
+        return prospective_dir
+    else:
+        raise error
+
+
+def readable_file(prospective_file):
+    """Check is the provided path leads to a fileectory
+
+    Arguments:
+        prospective_file {str} -- file path 
+
+    Raises:
+        error: FileNotFoundError saying that the fileector is not valid
+
+    Returns:
+        [type] -- [description]
+    """
+    error = FileNotFoundError(errno.ENOENT,
+                              os.strerror(errno.ENOENT),
+                              f'{prospective_file} is not a valid file')
+
+    if not (os.path.isfile(prospective_file) and os.path.exists(prospective_file)):
+        raise error
+    if os.access(prospective_file, os.R_OK):
+        return prospective_file
+    else:
+        raise error

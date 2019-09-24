@@ -1,10 +1,16 @@
+import os
 import time
 import logging
+
+from argparse import ArgumentParser
 import numpy as np
 import tensorflow as tf
 
 import constant
-from utils import (preprocess_sentence, plot_attention)
+from utils import (preprocess_sentence,
+                   plot_attention,
+                   readable_dir,
+                   readable_file)
 from data import Dataset
 from models import (Encoder, BahdanauAttention, Decoder)
 
@@ -14,6 +20,53 @@ K = tf.keras
 KP = tf.keras.preprocessing
 KC = tf.keras.callbacks
 KL = tf.keras.losses
+
+# Create an ArgumentParser instance
+parser = ArgumentParser()
+parser.add_argument(
+    '-d', '--dataset',
+    action='store',
+    type=readable_dir,
+    required=True,
+    help='Path of the directory containing the dataset'
+)
+
+parser.add_argument(
+    '-l', '--log-file',
+    action='store',
+    type=readable_file,
+    required=False,
+    help='Path to the .log file. By default logs will be added to `app.log`',
+    # default='app.log' => Created automatically below while parsing params 
+)
+
+train_group = parser.add_argument_group('train')
+train_group.add_argument(
+    '-b', '--batch-size',
+    action='store',
+    type=int,
+    required=False,
+    default=32,
+    help='Batch size to use while training'
+)
+
+train_group.add_argument(
+   '-c', '--checkpoint-dir',
+    action='store',
+    type=readable_dir,
+    help='Loads the checkpoint from the given directory. If not found raises FileNotFoundError'
+)
+
+evaluate_group = parser.add_argument_group('evaluate')
+evaluate_group.add_argument(
+    'sentence',
+    action='store',
+    type=str,
+    help='Sentence to be translated'
+)
+
+args = parser.parse_args()
+print(args)
 
 data = Dataset()
 optimizer = tf.keras.optimizers.Adam()
@@ -37,7 +90,7 @@ decoder = Decoder(
 )
 LOGGER.info(f'Initialized Encoder, Attention Layer & Decoder')
 
-# LOGGER the model details
+# log the model details
 example_input_batch, example_target_batch = next(iter(data.train_dataset))
 sample_hidden = encoder.initialize_hidden_state()
 sample_output, sample_hidden = encoder(example_input_batch, sample_hidden)
@@ -48,19 +101,19 @@ sample_decoder_output, sample_decoder_state, _ = decoder(tf.random.uniform((cons
                                                          sample_output)
 
 LOGGER.debug(f'Encoder output shape => '
-              f'(batch size, sequence length, units) => {sample_output.shape}')
+             f'(batch size, sequence length, units) => {sample_output.shape}')
 LOGGER.debug(f'Encoder Hidden state shape => '
-              f'(batch size, units) => {sample_hidden.shape}')
+             f'(batch size, units) => {sample_hidden.shape}')
 
 LOGGER.debug(f'Attention result shape => '
-              f'(batch size, units) => {attention_result.shape}')
+             f'(batch size, units) => {attention_result.shape}')
 LOGGER.debug(f'Attention weights shape => '
-              f'(batch_size, sequence_length, 1) => {attention_weights.shape}')
+             f'(batch_size, sequence_length, 1) => {attention_weights.shape}')
 
 LOGGER.debug(f'Decoder output shape => '
-              f'(batch_size, vocab size) => {sample_decoder_output.shape}')
+             f'(batch_size, vocab size) => {sample_decoder_output.shape}')
 LOGGER.debug(f'Decoder Hidden state shape => '
-              f'(batch_size, units) => {sample_decoder_state.shape}')
+             f'(batch_size, units) => {sample_decoder_state.shape}')
 
 
 def loss_function(real, pred):
@@ -125,8 +178,8 @@ def train():
 
             if batch % 100 == 0:
                 LOGGER.debug(f'Epoch {epoch + 1} '
-                              f'Batch {batch} '
-                              f'Loss {batch_loss.numpy()}')
+                             f'Batch {batch} '
+                             f'Loss {batch_loss.numpy()}')
 
         # saving (checkpoint) the model every 2 epochs
         if (epoch + 1) % 2 == 0:
@@ -134,7 +187,7 @@ def train():
             LOGGER.debug(f'Epoch {epoch + 1} Checkpoint saved')
 
         LOGGER.debug(f'Epoch {epoch + 1} '
-                      f'Loss {total_loss / data.steps_per_epoch}')
+                     f'Loss {total_loss / data.steps_per_epoch}')
         LOGGER.debug(f'Time taken for 1 epoch {time.time() - start} sec')
 
 
@@ -204,9 +257,10 @@ try:
     checkpoint.restore(tf.train.latest_checkpoint(
         constant.PATH_CHECKPOINT_DIR))
     LOGGER.info(f'Loaded weights from => '
-                 f'{constant.PATH_CHECKPOINT_DIR}')
+                f'{constant.PATH_CHECKPOINT_DIR}')
 except Exception as e:
     LOGGER.error(f'Error while loading trained weights => {e}')
+
 
 translate(u'hace mucho frio aqui.')
 
