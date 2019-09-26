@@ -3,8 +3,8 @@ import logging
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
 
-import constant
-from utils import (create_dataset, tokenize, load_cached_data)
+import translate.constant as constant
+from translate.utils import (create_dataset, tokenize, load_cached_data)
 
 logging.getLogger('matplotlib').setLevel(logging.WARNING)
 LOGGER = logging.getLogger(__name__)

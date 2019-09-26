@@ -6,13 +6,13 @@ from argparse import ArgumentParser
 import numpy as np
 import tensorflow as tf
 
-import constant
-from utils import (preprocess_sentence,
-                   plot_attention,
-                   readable_dir,
-                   readable_file)
-from data import Dataset
-from models import (Encoder, BahdanauAttention, Decoder)
+import translate.constant as constant
+from translate.utils import (preprocess_sentence,
+                             plot_attention,
+                             readable_dir,
+                             readable_file)
+from translate.data import Dataset
+from translate.models import (Encoder, BahdanauAttention, Decoder)
 
 LOGGER = logging.getLogger(__name__)
 
@@ -20,11 +20,12 @@ K = tf.keras
 KP = tf.keras.preprocessing
 KC = tf.keras.callbacks
 KL = tf.keras.losses
+KO = tf.keras.optimizers
 
 # Create an ArgumentParser instance
 parser = ArgumentParser()
 parser.add_argument(
-    '-d', '--dataset',
+    '-d', '--dataset-path',
     action='store',
     type=readable_dir,
     required=True,
@@ -37,11 +38,12 @@ parser.add_argument(
     type=readable_file,
     required=False,
     help='Path to the .log file. By default logs will be added to `app.log`',
-    # default='app.log' => Created automatically below while parsing params 
+    # default='app.log' => Created automatically below while parsing params
 )
 
-train_group = parser.add_argument_group('train')
-train_group.add_argument(
+sub_parser = parser.add_subparsers()
+train_sub_parser = sub_parser.add_parser(name='train')
+train_sub_parser.add_argument(
     '-b', '--batch-size',
     action='store',
     type=int,
@@ -50,26 +52,28 @@ train_group.add_argument(
     help='Batch size to use while training'
 )
 
-train_group.add_argument(
-   '-c', '--checkpoint-dir',
+train_sub_parser.add_argument(
+    '-c', '--checkpoint-dir',
     action='store',
     type=readable_dir,
+    required=False,
     help='Loads the checkpoint from the given directory. If not found raises FileNotFoundError'
 )
 
-evaluate_group = parser.add_argument_group('evaluate')
-evaluate_group.add_argument(
-    'sentence',
+evaluate_sub_parser = sub_parser.add_parser(name='evaluate')
+evaluate_sub_parser.add_argument(
+    '-s', '--str',
     action='store',
     type=str,
-    help='Sentence to be translated'
+    required=True,
+    help='Sentence string to be translated'
 )
 
 args = parser.parse_args()
 print(args)
 
 data = Dataset()
-optimizer = tf.keras.optimizers.Adam()
+optimizer = KO.Adam()
 loss_object = KL.SparseCategoricalCrossentropy(
     from_logits=True,
     reduction='none'
@@ -192,7 +196,7 @@ def train():
 
 
 def evaluate(sentence):
-    """Input to the decoder at each time step is its previous predictions along 
+    """Input to the decoder at each time step is its previous predictions along
     with the hidden state and the encoder output.
 
     Arguments:
@@ -252,17 +256,11 @@ def translate(sentence):
     plot_attention(attention_plot, sentence, result)
 
 
-# train()
-try:
-    checkpoint.restore(tf.train.latest_checkpoint(
-        constant.PATH_CHECKPOINT_DIR))
-    LOGGER.info(f'Loaded weights from => '
-                f'{constant.PATH_CHECKPOINT_DIR}')
-except Exception as e:
-    LOGGER.error(f'Error while loading trained weights => {e}')
-
-
-translate(u'hace mucho frio aqui.')
-
-
-print('Debug breakpoint')
+def restore_checkpoints():
+    try:
+        checkpoint.restore(tf.train.latest_checkpoint(
+            constant.PATH_CHECKPOINT_DIR))
+        LOGGER.info(f'Loaded weights from => '
+                    f'{constant.PATH_CHECKPOINT_DIR}')
+    except Exception as e:
+        LOGGER.error(f'Error while loading trained weights => {e}')

@@ -164,13 +164,13 @@ def readable_dir(prospective_dir):
     error = FileNotFoundError(errno.ENOENT,
                               os.strerror(errno.ENOENT),
                               f'{prospective_dir} is not a valid dir')
-
-    if not os.path.isdir(prospective_dir):
-        raise error
-    if os.access(prospective_dir, os.R_OK):
+    prospective_dir = os.path.abspath(prospective_dir)
+    if os.path.isdir(prospective_dir) \
+            and os.path.exists(prospective_dir) \
+            and os.access(prospective_dir, os.R_OK):
         return prospective_dir
-    else:
-        raise error
+
+    raise error
 
 
 def readable_file(prospective_file):
@@ -189,9 +189,10 @@ def readable_file(prospective_file):
                               os.strerror(errno.ENOENT),
                               f'{prospective_file} is not a valid file')
 
-    if not (os.path.isfile(prospective_file) and os.path.exists(prospective_file)):
-        raise error
-    if os.access(prospective_file, os.R_OK):
+    prospective_file = os.path.abspath(prospective_file)
+    if os.path.isfile(prospective_file) \
+            and os.path.exists(prospective_file) \
+            and os.access(prospective_file, os.R_OK):
         return prospective_file
-    else:
-        raise error
+
+    raise error
