@@ -16,8 +16,10 @@ AUTOTUNE = tf.data.experimental.AUTOTUNE
 
 class Dataset:
 
-    def __init__(self, data_path=None):
+    def __init__(self, data_path=None, data_size=None):
         if data_path is None:
+            LOGGER.warning(f'No path specified for dataset. Downloading English-Spanish dataset from => '
+                           f"{'http://storage.googleapis.com/download.tensorflow.org/data/spa-eng.zip'}")
             # Download the dataset file
             path_to_zip = K.utils.get_file(
                 'spa-eng.zip',
@@ -36,13 +38,15 @@ class Dataset:
         self.input_seq, \
             self.target_seq, \
             self.tokenizer_input, \
-            self.tokenizer_target = self.load_dataset()
+            self.tokenizer_target = self.load_dataset(data_size)
 
         # Creating training and validation sets using an 80-20 split
-        self.train_input, self.val_input, self.train_target, self.val_target = train_test_split(
-            self.input_seq, self.target_seq,
-            test_size=0.2
-        )
+        self.train_input, \
+            self.val_input, \
+            self.train_target, \
+            self.val_target = train_test_split(self.input_seq,
+                                               self.target_seq,
+                                               test_size=0.2)
 
         # Log the dataset details
         LOGGER.debug(f'Input data (train, val) => '
@@ -58,13 +62,18 @@ class Dataset:
         self.max_length_target = self.max_length(self.target_seq)
         self.max_length_input = self.max_length(self.input_seq)
 
+        LOGGER.info(f'Data vocab size (input, output) => '
+                    f'({self.vocab_size_input}, {self.vocab_size_target})')
+        LOGGER.info(f'Data max length (input, output) => '
+                    f'({self.max_length_input}, {self.max_length_target})')
+
         # Create [tf.data.Dataset] pipeline considering bucketing of each batch
         self.train_dataset = tf.data.Dataset \
             .from_tensor_slices((self.train_input, self.train_target)) \
             .shuffle(self.buffer_size) \
             .batch(constant.BATCH_SIZE, drop_remainder=True)
 
-    def load_dataset(self, num_examples=constant.DATASET_SIZE):
+    def load_dataset(self, num_examples=None):
         """Loads the dataset
         Calls [create_dataset] to retrive the processed data
 
@@ -81,6 +90,8 @@ class Dataset:
         #     create_dataset, True,
         #     self.path_to_file, num_examples
         # )
+
+        LOGGER.info(f'Loading dataset from => {self.path_to_file}')
 
         inp_lang, targ_lang = create_dataset(self.path_to_file, num_examples)
 

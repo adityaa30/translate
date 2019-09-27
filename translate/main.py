@@ -14,8 +14,6 @@ from translate.utils import (preprocess_sentence,
 from translate.data import Dataset
 from translate.models import (Encoder, BahdanauAttention, Decoder)
 
-LOGGER = logging.getLogger(__name__)
-
 K = tf.keras
 KP = tf.keras.preprocessing
 KC = tf.keras.callbacks
@@ -24,12 +22,42 @@ KO = tf.keras.optimizers
 
 # Create an ArgumentParser instance
 parser = ArgumentParser()
+sub_parser = parser.add_subparsers(dest='sub_command')
+train_sub_parser = sub_parser.add_parser(name=constant.CLI_COMMAND_TRAIN)
+train_sub_parser.add_argument(
+    '-b', '--batch-size',
+    action='store',
+    type=int,
+    required=False,
+    default=32,
+    help='Batch size to use while training'
+)
+
+train_sub_parser.add_argument(
+    '-D', '--dataset-size',
+    action='store',
+    type=int,
+    required=False,
+    default=None,
+    help='Dataset size to use while training'
+)
+
+evaluate_sub_parser = sub_parser.add_parser(name=constant.CLI_COMMAND_EVALUATE)
+evaluate_sub_parser.add_argument(
+    '-s', '--sentence',
+    action='store',
+    type=str,
+    required=True,
+    help='Sentence string to be translated'
+)
+
 parser.add_argument(
     '-d', '--dataset-path',
     action='store',
     type=readable_dir,
-    required=True,
-    help='Path of the directory containing the dataset'
+    required=False,
+    help='Path of the directory containing the dataset.\n'
+    'Downloads English-Spanish dataset by default.'
 )
 
 parser.add_argument(
@@ -41,38 +69,38 @@ parser.add_argument(
     # default='app.log' => Created automatically below while parsing params
 )
 
-sub_parser = parser.add_subparsers()
-train_sub_parser = sub_parser.add_parser(name='train')
-train_sub_parser.add_argument(
-    '-b', '--batch-size',
-    action='store',
-    type=int,
-    required=False,
-    default=32,
-    help='Batch size to use while training'
-)
-
-train_sub_parser.add_argument(
+parser.add_argument(
     '-c', '--checkpoint-dir',
     action='store',
     type=readable_dir,
-    required=False,
-    help='Loads the checkpoint from the given directory. If not found raises FileNotFoundError'
-)
-
-evaluate_sub_parser = sub_parser.add_parser(name='evaluate')
-evaluate_sub_parser.add_argument(
-    '-s', '--str',
-    action='store',
-    type=str,
     required=True,
-    help='Sentence string to be translated'
+    help='Loads the checkpoint from the given directory if present.\n'
+    'Saves a checkpoint at the end of every 2 epochs.'
 )
 
 args = parser.parse_args()
 print(args)
 
-data = Dataset()
+if args.sub_command == constant.CLI_COMMAND_TRAIN:
+    constant.BATCH_SIZE = args.batch_size
+    constant.DATASET_SIZE = args.dataset_size
+
+constant.PATH_CHECKPOINT_DIR = os.path.abspath(args.checkpoint_dir)
+constant.PATH_CHECKPOINT = os.path.join(constant.PATH_CHECKPOINT_DIR, 'ckpt')
+
+log_file_name = None
+if args.log_file:
+    constant.PATH_LOG_FILE = os.path.join(constant.DIR_LOGS, args.log_file)
+
+
+constant.initialize_logger()
+
+# Get the logger instance with updated configuration
+LOGGER = logging.getLogger(__name__)
+
+data = Dataset(data_path=args.dataset_path,
+               data_size=args.dataset_size)
+               
 optimizer = KO.Adam()
 loss_object = KL.SparseCategoricalCrossentropy(
     from_logits=True,
@@ -92,6 +120,7 @@ decoder = Decoder(
     constant.LSTM_UNITS,
     constant.BATCH_SIZE
 )
+
 LOGGER.info(f'Initialized Encoder, Attention Layer & Decoder')
 
 # log the model details
@@ -104,20 +133,20 @@ sample_decoder_output, sample_decoder_state, _ = decoder(tf.random.uniform((cons
                                                          sample_hidden,
                                                          sample_output)
 
-LOGGER.debug(f'Encoder output shape => '
-             f'(batch size, sequence length, units) => {sample_output.shape}')
-LOGGER.debug(f'Encoder Hidden state shape => '
-             f'(batch size, units) => {sample_hidden.shape}')
+LOGGER.info(f'Encoder output shape => '
+            f'(batch size, sequence length, units) => {sample_output.shape}')
+LOGGER.info(f'Encoder Hidden state shape => '
+            f'(batch size, units) => {sample_hidden.shape}')
 
-LOGGER.debug(f'Attention result shape => '
-             f'(batch size, units) => {attention_result.shape}')
-LOGGER.debug(f'Attention weights shape => '
-             f'(batch_size, sequence_length, 1) => {attention_weights.shape}')
+LOGGER.info(f'Attention result shape => '
+            f'(batch size, units) => {attention_result.shape}')
+LOGGER.info(f'Attention weights shape => '
+            f'(batch_size, sequence_length, 1) => {attention_weights.shape}')
 
-LOGGER.debug(f'Decoder output shape => '
-             f'(batch_size, vocab size) => {sample_decoder_output.shape}')
-LOGGER.debug(f'Decoder Hidden state shape => '
-             f'(batch_size, units) => {sample_decoder_state.shape}')
+LOGGER.info(f'Decoder output shape => '
+            f'(batch_size, vocab size) => {sample_decoder_output.shape}')
+LOGGER.info(f'Decoder Hidden state shape => '
+            f'(batch_size, units) => {sample_decoder_state.shape}')
 
 
 def loss_function(real, pred):
@@ -169,7 +198,7 @@ def train_step(inp, target, enc_hidden):
 
 
 def train():
-    LOGGER.info(f'Starting training')
+    LOGGER.debug(f'Starting training')
     for epoch in range(constant.EPOCHS):
         start = time.time()
 
@@ -204,6 +233,7 @@ def evaluate(sentence):
     """
     attention_plot = np.zeros((data.max_length_target, data.max_length_input))
     sentence = preprocess_sentence(sentence)
+    print(sentence)
 
     inputs = [data.tokenizer_input.word_index[i]
               for i in sentence.strip().split(' ')]
@@ -264,3 +294,15 @@ def restore_checkpoints():
                     f'{constant.PATH_CHECKPOINT_DIR}')
     except Exception as e:
         LOGGER.error(f'Error while loading trained weights => {e}')
+        LOGGER.warning(f'Cannot load weights from {constant.PATH_CHECKPOINT_DIR}, '
+                       f'initialized model with no pre-trained weights.')
+
+
+restore_checkpoints()
+
+if args.sub_command == constant.CLI_COMMAND_EVALUATE:
+    translate(args.sentence)
+elif args.sub_command == constant.CLI_COMMAND_TRAIN:
+    train()
+else:
+    LOGGER.warning(f'Incorrect sub-command used "{args.sub_command}"')
