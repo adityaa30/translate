@@ -85,20 +85,28 @@ class Dataset:
             [list] -- List of sequences of input & output dataset
             [KP.text.Tokenizer] -- Object of the tokenizer of input & output dataset
         """
+        LOGGER.info(f'Loading & processing dataset from => {self.path_to_file}')
+
         # NOTE: Temporarily disabled caching of the dataset
-        # targ_lang, inp_lang = load_cached_data(
-        #     create_dataset, True,
-        #     self.path_to_file, num_examples
-        # )
+        inp_lang, targ_lang = load_cached_data(
+            create_dataset, False,
+            self.path_to_file, num_examples
+        )
+        # inp_lang, targ_lang = create_dataset(self.path_to_file, num_examples)
 
-        LOGGER.info(f'Loading dataset from => {self.path_to_file}')
-
-        inp_lang, targ_lang = create_dataset(self.path_to_file, num_examples)
+        if constant.REVERSE_DATA:
+            # Swap the input and ouput dataset
+            inp_lang, targ_lang = targ_lang, inp_lang
 
         input_text_seq, inp_lang_tokenizer = tokenize(inp_lang)
         target_text_seq, targ_lang_tokenizer = tokenize(targ_lang)
 
-        LOGGER.info('Loaded the dataset')
+        LOGGER.info('Successfully loaded the dataset')
+        LOGGER.info(f'Processed input data => {inp_lang[:5]}')
+        LOGGER.info(f'Tokenized input data => {input_text_seq[:5]}')
+        LOGGER.info(f'Processed target data => {targ_lang[:5]}')
+        LOGGER.info(f'Tokenized target data => {target_text_seq[:5]}')
+        
         return input_text_seq, target_text_seq, inp_lang_tokenizer, targ_lang_tokenizer
 
     @staticmethod

@@ -12,7 +12,7 @@ EMBEDDING_DIM = 256
 LSTM_UNITS = 1024
 BATCH_SIZE = 32
 
-# Initialzed as the ArgumentParser parses argument  
+# Initialzed as the ArgumentParser parses argument
 DATASET_SIZE = None  # For taking the complete dataset (= None)
 
 # Logs each train step with great detail.
@@ -25,10 +25,15 @@ DIR_LOGS = os.path.join(os.path.abspath('.'), 'logs')
 PATH_CACHE_DIR = os.path.join(DIR_CACHE,
                               f'cache_{DATASET_SIZE}_{BATCH_SIZE}')
 
-# Initialzed as the ArgumentParser parses argument  
+# Initialzed as the ArgumentParser parses argument
 PATH_LOG_FILE = None
 PATH_CHECKPOINT_DIR = None
 PATH_CHECKPOINT = None
+
+# Initialzed as the ArgumentParser parses argument
+# True => Use 1st columnt in dataset file as target and 2nd as input while training else vice versa.
+REVERSE_DATA = None
+
 
 def initialize_logger():
     # Create directory to save all logs data

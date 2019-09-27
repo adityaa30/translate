@@ -42,6 +42,17 @@ train_sub_parser.add_argument(
     help='Dataset size to use while training'
 )
 
+
+parser.add_argument(
+    '-r', '--reverse-data',
+    action='store',
+    type=bool,
+    required=False,
+    default=False,
+    help='True => Use 1st columnt in dataset file as target and 2nd as input while training else vice versa.'
+)
+
+
 evaluate_sub_parser = sub_parser.add_parser(name=constant.CLI_COMMAND_EVALUATE)
 evaluate_sub_parser.add_argument(
     '-s', '--sentence',
@@ -87,6 +98,7 @@ if args.sub_command == constant.CLI_COMMAND_TRAIN:
 
 constant.PATH_CHECKPOINT_DIR = os.path.abspath(args.checkpoint_dir)
 constant.PATH_CHECKPOINT = os.path.join(constant.PATH_CHECKPOINT_DIR, 'ckpt')
+constant.REVERSE_DATA = args.reverse_data
 
 log_file_name = None
 if args.log_file:
@@ -100,7 +112,7 @@ LOGGER = logging.getLogger(__name__)
 
 data = Dataset(data_path=args.dataset_path,
                data_size=args.dataset_size)
-               
+
 optimizer = KO.Adam()
 loss_object = KL.SparseCategoricalCrossentropy(
     from_logits=True,
