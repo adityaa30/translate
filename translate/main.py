@@ -39,7 +39,7 @@ train_sub_parser.add_argument(
     type=int,
     required=False,
     default=None,
-    help='Dataset size to use while training'
+    help='Dataset size to use while training.\nBy default takes the entire dataset is used.'
 )
 
 

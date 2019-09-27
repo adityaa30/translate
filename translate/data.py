@@ -1,7 +1,7 @@
 import os
 import logging
+import numpy as np
 import tensorflow as tf
-from sklearn.model_selection import train_test_split
 
 import translate.constant as constant
 from translate.utils import (create_dataset, tokenize, load_cached_data)
@@ -44,9 +44,7 @@ class Dataset:
         self.train_input, \
             self.val_input, \
             self.train_target, \
-            self.val_target = train_test_split(self.input_seq,
-                                               self.target_seq,
-                                               test_size=0.2)
+            self.val_target = self.split_data(test_size=0.2)
 
         # Log the dataset details
         LOGGER.debug(f'Input data (train, val) => '
@@ -85,7 +83,8 @@ class Dataset:
             [list] -- List of sequences of input & output dataset
             [KP.text.Tokenizer] -- Object of the tokenizer of input & output dataset
         """
-        LOGGER.info(f'Loading & processing dataset from => {self.path_to_file}')
+        LOGGER.info(f'Loading & processing dataset from => '
+                    f'{self.path_to_file}')
 
         # NOTE: Temporarily disabled caching of the dataset
         inp_lang, targ_lang = load_cached_data(
@@ -101,13 +100,35 @@ class Dataset:
         input_text_seq, inp_lang_tokenizer = tokenize(inp_lang)
         target_text_seq, targ_lang_tokenizer = tokenize(targ_lang)
 
+        input_text_seq = np.array(input_text_seq)
+        target_text_seq = np.array(target_text_seq)
+
         LOGGER.info('Successfully loaded the dataset')
         LOGGER.info(f'Processed input data => {inp_lang[:5]}')
         LOGGER.info(f'Tokenized input data => {input_text_seq[:5]}')
         LOGGER.info(f'Processed target data => {targ_lang[:5]}')
         LOGGER.info(f'Tokenized target data => {target_text_seq[:5]}')
-        
+
         return input_text_seq, target_text_seq, inp_lang_tokenizer, targ_lang_tokenizer
+
+    def split_data(self, test_size=0.2):
+        """Split arrays or matrices into random train and test subsets
+
+        Keyword Arguments:
+            test_size {float} -- should be between 0.0 and 1.0 and represent the
+             proportion of the dataset to include in the test split (default: {0.2})
+
+        Returns:
+            Training and validation data
+        """
+        assert(self.input_seq.shape == self.target_seq.shape)
+
+        split_size = int(self.input_seq.shape[0] * (1 - test_size))
+        LOGGER.info(f'Test size for dataset => {test_size} (= {split_size})')
+
+        idx = np.random.permutation(self.input_seq.shape[0])
+        training_idx, val_idx = idx[:split_size], idx[split_size:]
+        return self.input_seq[training_idx, :], self.input_seq[val_idx, :], self.target_seq[training_idx, :], self.target_seq[val_idx, :]
 
     @staticmethod
     def max_length(iterable):
