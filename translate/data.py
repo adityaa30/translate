@@ -121,7 +121,7 @@ class Dataset:
         Returns:
             Training and validation data
         """
-        assert(self.input_seq.shape == self.target_seq.shape)
+        assert(self.input_seq.shape[0] == self.target_seq.shape[0])
 
         split_size = int(self.input_seq.shape[0] * (1 - test_size))
         LOGGER.info(f'Test size for dataset => {test_size} (= {split_size})')

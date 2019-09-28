@@ -51,8 +51,8 @@ def initialize_logger():
     LOGGER = logging.getLogger(__name__)
 
     # Create directory to save all checkpoints
-    if not (os.path.exists(DIR_CHECKPOINTS) and os.path.isdir(DIR_CHECKPOINTS)):
-        os.mkdir(DIR_CHECKPOINTS)
+    # if not (os.path.exists(DIR_CHECKPOINTS) and os.path.isdir(DIR_CHECKPOINTS)):
+    #    os.mkdir(DIR_CHECKPOINTS)
 
     # Create directory to save all cache data
     if not (os.path.exists(DIR_CACHE) and os.path.isdir(DIR_CACHE)):
