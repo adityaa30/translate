@@ -24,7 +24,7 @@ A basic form of NMT consists of two components:
 
 ## Usage
 
-> $ python translate/main.py --help
+> $ python -m translate.main --help
 ```
 usage: main.py [-h] [-r REVERSE_DATA] [-d DATASET_PATH] [-l LOG_FILE] -c
                CHECKPOINT_DIR
@@ -49,7 +49,7 @@ optional arguments:
                         present. Saves a checkpoint at the end of every 2
 ```
 
-> $ python translate/main.py train --help
+> $ python -m translate.main train --help
 ```
 usage: main.py train [-h] [-b BATCH_SIZE] [-D DATASET_SIZE]
 
@@ -61,7 +61,7 @@ optional arguments:
                         Dataset size to use while training
 ```
 
-> $ python translate/main.py evaluate --help
+> $ python -m translate.main evaluate --help
 ```
 usage: main.py evaluate [-h] -s SENTENCE
 

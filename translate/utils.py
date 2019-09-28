@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import tensorflow as tf
 
-import constant
+import translate.constant as constant
 
 LOGGER = logging.getLogger(__name__)
 
